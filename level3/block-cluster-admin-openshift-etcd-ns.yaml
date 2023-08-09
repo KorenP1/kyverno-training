@@ -1,0 +1,36 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: block-cluster-admin-openshift-etcd-ns
+  annotations:
+    policies.kyverno.io/title: Block Cluster Admin on Openshift-etcd Namespace
+    policies.kyverno.io/category: Sample
+    policies.kyverno.io/subject: RBAC
+spec:
+  validationFailureAction: enforce
+  background: false
+  rules:
+  - name: block-cluster-admin-openshift-etcd-ns
+    match:
+      any:
+      - resources:
+          kinds:
+          - "*"
+          namespaces:
+          - openshift-etcd
+        clusterRoles:
+        - cluster-admin
+        subjects:
+        - kind: User
+          name: test
+    validate:
+      message: "The cluster-admin 'test' user cannot touch Openshift-etcd Namespace."
+      deny:
+        conditions:
+          any:
+            - key: "{{request.operation || 'BACKGROUND'}}"
+              operator: AnyIn
+              value:
+              - CREATE
+              - UPDATE
+              - DELETE
